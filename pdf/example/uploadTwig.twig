@@ -1,0 +1,30 @@
+{{ form_start(articleForm) }}
+    {{ form_row(articleForm.title, {
+        label: 'Article title'
+    }) }}
+    {{ form_row(articleForm.imageFile) }}
+{{ form_end(articleForm) }}
+
+
+// or for bootstrap
+{{ form_start(articleForm) }}
+    {{ form_row(articleForm.imageFile, {
+        attr: {
+            'placeholder': 'Select an article image'
+        }
+    }) }}
+{{ form_end(articleForm) }}
+
+
+
+
+{% block javascripts %}
+            <script>
+                $('.custom-file-input').on('change', function(event) {
+                    var inputFile = event.currentTarget;
+                    $(inputFile).parent()
+                        .find('.custom-file-label')
+                        .html(inputFile.files[0].name);
+                });
+            </script>
+        {% endblock %}

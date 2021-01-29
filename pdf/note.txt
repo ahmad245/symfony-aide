@@ -1,0 +1,2 @@
+https://stackoverflow.com/questions/24721526/symfony2-serve-open-pdf-file
+https://symfony.com/doc/current/components/http_foundation.html#serving-files

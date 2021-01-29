@@ -1,0 +1,7 @@
+# config/services.yaml
+services:
+    # ...
+
+    App\Service\FileUploader:
+        arguments:
+            $targetDirectory: '%brochures_directory%'
