@@ -1,0 +1,2 @@
+parameters:
+    brochures_directory: '%kernel.project_dir%/public/uploads/brochures'
