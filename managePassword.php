@@ -29,7 +29,6 @@ use App\Form\UpdatePasswordType;
 use App\Security\TokenGenerator;
 use App\Entity\ForgottenPassword;
 use App\Entity\ResetPassword;
-use App\Event\UserResetPasswordEvent;
 use App\Repository\UserRepository;
 use App\Form\ForgottenPasswordType;
 use App\Form\ResetPasswordType;
@@ -38,11 +37,10 @@ use Doctrine\ORM\EntityManagerInterface;
 use App\Security\UserConfirmationService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
-
+use App\Mailer\Mailer;
 class ManagePasswordController extends AbstractController
 {
     private $em;
@@ -50,19 +48,22 @@ class ManagePasswordController extends AbstractController
     private $token;
     private $eventDispatcher;
     private $userConfirmationService;
+    private $mailer;
+  
+     
     public function __construct(
         EntityManagerInterface $em,
-        UserPasswordEncoderInterface $encode,
         TokenGenerator $token,
-        EventDispatcherInterface $eventDispatcher,
-        UserConfirmationService $userConfirmationService
+
+        UserConfirmationService $userConfirmationService,
+        Mailer $mailer
         )
     {
         $this->em=$em;
         $this->encode=$encode;
         $this->token=$token;
-        $this->eventDispatcher=$eventDispatcher;
-        $this->userConfirmationService=$userConfirmationService;
+
+        $this->mailer=$mailer; 
     }
     /**
      * @Route("/managePassword/password-update", name="password_update")
@@ -125,11 +126,9 @@ class ManagePasswordController extends AbstractController
             
             // 6 send email to user and linked to resetPassowrd url()
 
-                //create instance from event and pass user as information 
-                $userResetPasswordEvent=new UserResetPasswordEvent($user);
-
-                //dispatch the event using EventDispatcherInterface method dispatch(event object ,event name); 
-                $this->eventDispatcher->dispatch($userResetPasswordEvent,UserResetPasswordEvent::Name); 
+              
+                // $this->eventDispatcher->dispatch($userResetPasswordEvent,UserResetPasswordEvent::Name); 
+                $this->mailer->sendConfirmationResetPassword($user);
                 $this->addFlash('notice', 'Please Check Your Email !');
            
         }
@@ -146,7 +145,7 @@ class ManagePasswordController extends AbstractController
 /**
      * @Route("/managePassword/password-reset/{token}", name="password_reset")
      */
-    public function resetPassword($token,Request $req)
+    public function resetPassword($token,Request $req,UserRepository userRepo)
     {
           // 1 form for reenter password 
         $resetPassword=new ResetPassword();
@@ -161,11 +160,26 @@ class ManagePasswordController extends AbstractController
          // 4 if exist user setToken to null 
          // 5 set enable to true 
          // set password using UserPasswordEncoderInterface $encoder
-         $this->userConfirmationService->confirmUserAndPassword($token,$resetPassword->getNewPassword());
-       
-         // redirect to log in 
-         return $this->redirectToRoute('account_login');
+         $user=userRepo->findOneBy(
+            ['confirmationToken'=>$token]
+        );
+
+        if(!$user)
+        {
+            throw new error();
         }
+        $user->setConfirmationToken(null);
+        $user->setEnabled(true);
+        $user->setPassword($this->encode->encodePassword($user,$password));
+
+        $this->em->flush();
+        // redirect to log in 
+        return $this->redirectToRoute('account_login');
+    }
+       
+         
+         
+        
 
         return $this->render('account/forgottenPassword.html.twig', [
             'form' => $form->createView()

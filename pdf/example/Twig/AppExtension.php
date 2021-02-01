@@ -8,6 +8,13 @@ class AppExtension extends AbstractExtension implements ServiceSubscriberInterfa
         ];
     }
 
+    public static function getSubscribedServices()
+    {
+        return [
+            UploaderHelper::class,
+        ];
+    }
+
     public function getUploadedAssetPath(string $path): string
     {
         return $this->container
